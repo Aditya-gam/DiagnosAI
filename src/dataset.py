@@ -2,27 +2,71 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 from PIL import Image
 from glob import glob
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from itertools import chain
+
+# Define constants for column names
+FINDING_LABELS_COLUMN = 'Finding Labels'
 
 # Load the dataset
-data = pd.read_csv('./input/NIH_Dataset/Data_Entry_2017.csv')
+data = pd.read_csv('../data/NIH_Dataset/Data_Entry_2017.csv')
 data = data[data['Patient Age'] < 100]  # Filter out entries with age >= 100
 
 # Map image paths
-base_path = './input/NIH_Dataset/images'
-data['path'] = data['Image Index'].apply(lambda x: os.path.join(base_path, x))
+# Define the base directory path where images are stored
+base_path = '../data/NIH_Dataset'
+
+# Use glob to find all PNG images in the nested directories and map them by their basename
+image_paths = glob(os.path.join(base_path, 'images_*', 'images', '*.png'))
+
+# Create a dictionary to map image file names to their full paths
+image_path_dict = {os.path.basename(path): path for path in image_paths}
+
+# Map image paths to the data entries
+data['path'] = data['Image Index'].map(image_path_dict.get)
+
+# Check for any entries that didn't find a corresponding path
+missing_images = data[data['path'].isnull()]
+print(f"Missing image paths: {missing_images.shape[0]}")
+
+# Sample data to check the paths
+print(data[['Image Index', 'path']].sample(5))
 
 # Remove 'No Finding' labels and split labels
-data['Finding Labels'] = data['Finding Labels'].apply(lambda x: x.replace('No Finding', ''))
-all_labels = sorted(np.unique(np.concatenate(data['Finding Labels'].map(lambda x: x.split('|')).values)))
+data[FINDING_LABELS_COLUMN] = data[FINDING_LABELS_COLUMN].apply(lambda x: x.replace('No Finding', ''))
+all_labels = sorted(np.unique(list(chain(*data[FINDING_LABELS_COLUMN].map(lambda x: x.split('|')).tolist()))))
 
-# Create binary labels
+# Create binary labels using a lambda function with a default argument
 for label in all_labels:
-    data[label] = data['Finding Labels'].apply(lambda x: 1.0 if label in x else 0)
+    data[label] = data['Finding Labels'].apply(lambda x, lbl=label: 1.0 if lbl in x else 0)
 
+# Filter labels to keep only those that appear in at least 1000 cases
+MIN_CASES = 1000
+all_labels = [label for label in all_labels if data[label].sum() > MIN_CASES]
+print('Clean Labels ({}):'.format(len(all_labels)), [(label, int(data[label].sum())) for label in all_labels])
+
+# Calculate sample weights based on the number of diseases diagnosed
+sample_weights = data['Finding Labels'].map(lambda x: len(x.split('|')) if x else 0).values + 0.04
+sample_weights /= sample_weights.sum()
+
+# Sample the data based on the computed weights to create a balanced dataset
+data = data.sample(40000, weights=sample_weights)
+
+# Visualize the distribution of findings
+label_counts = data['Finding Labels'].value_counts()[:15]
+fig, ax1 = plt.subplots(figsize=(5, 5))
+ax1.bar(np.arange(len(label_counts)) + 0.5, label_counts)
+ax1.set_xticks(np.arange(len(label_counts)) + 0.5)
+ax1.set_xticklabels(label_counts.index, rotation=90)
+plt.show()
+
+# creating vector of diseases
+data['disease_vec'] = data.apply(lambda x: [x[all_labels].values], axis=1).map(lambda x: x[0])
+print(data.iloc[0]['disease_vec'])
 # Define transformations
 transform = transforms.Compose([
     transforms.Resize((128, 128)),  # Resize to 128x128
@@ -65,7 +109,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=256, shuffle=False)
 
 # Function to visualize images
 def show_images(images, labels, n=4):
-    fig, axs = plt.subplots(n, n, figsize=(10, 10))
+    _, axs = plt.subplots(n, n, figsize=(10, 10))
     axs = axs.flatten()
     for img, label, ax in zip(images, labels, axs):
         img = img.numpy().transpose((1, 2, 0))
