@@ -13,12 +13,12 @@ from itertools import chain
 FINDING_LABELS_COLUMN = 'Finding Labels'
 
 # Load the dataset
-data = pd.read_csv('../data/NIH_Dataset/Data_Entry_2017.csv')
+data = pd.read_csv('./data/NIH_Dataset/Data_Entry_2017.csv')
 data = data[data['Patient Age'] < 100]  # Filter out entries with age >= 100
 
 # Map image paths
 # Define the base directory path where images are stored
-base_path = '../data/NIH_Dataset'
+base_path = './data/NIH_Dataset'
 
 # Use glob to find all PNG images in the nested directories and map them by their basename
 image_paths = glob(os.path.join(base_path, 'images_*', 'images', '*.png'))
