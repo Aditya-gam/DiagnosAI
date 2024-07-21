@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 from glob import glob
+from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -15,52 +16,61 @@ def load_image_lists():
         train_val_images = file.read().splitlines()
     with open(os.path.join(config.BASE_DATA_PATH, 'test_list.txt'), 'r') as file:
         test_images = file.read().splitlines()
-
     return train_val_images, test_images
 
 
 def load_data():
     train_val_images, test_images = load_image_lists()
-
     data = pd.read_csv(config.CSV_FILE)
     data = data[data['Patient Age'] < 100]
     data['image_file'] = data['Image Index'].apply(
-        lambda x: x.split('.')[0] + '.png')  # Ensure format matches the lists
+        lambda x: x.split('.')[0] + '.png')
     image_paths = glob(config.IMAGE_PATH_PATTERN)
     image_path_dict = {os.path.basename(path): path for path in image_paths}
     data['path'] = data['image_file'].map(image_path_dict.get)
 
-    # Apply filters based on the lists
     train_val_data = data[data['image_file'].isin(train_val_images)].copy()
     test_data = data[data['image_file'].isin(test_images)].copy()
 
-    # Use .loc to avoid SettingWithCopyWarning
     train_val_data.loc[:, config.FINDING_LABELS_COLUMN] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
         lambda x: x.replace('No Finding', ''))
     test_data.loc[:, config.FINDING_LABELS_COLUMN] = test_data[config.FINDING_LABELS_COLUMN].apply(
         lambda x: x.replace('No Finding', ''))
 
-    all_labels = sorted(np.unique(list(chain(
-        *train_val_data[config.FINDING_LABELS_COLUMN].map(lambda x: x.split('|')).tolist()))))
+    # Split labels and remove empty entries
+    all_labels = sorted(set(chain(
+        *train_val_data[config.FINDING_LABELS_COLUMN].map(lambda x: filter(None, x.split('|'))))))
 
+    # Create binary columns for each label
     for label in all_labels:
-        train_val_data.loc[:, label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
-            lambda x, lbl=label: 1.0 if lbl in x else 0)
-        test_data.loc[:, label] = test_data[config.FINDING_LABELS_COLUMN].apply(
-            lambda x, lbl=label: 1.0 if lbl in x else 0)
+        train_val_data[label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
+            lambda x: 1 if label in x else 0)
+        test_data[label] = test_data[config.FINDING_LABELS_COLUMN].apply(
+            lambda x: 1 if label in x else 0)
 
-    return train_val_data, test_data, all_labels
+    # Filter labels based on occurrence threshold
+    label_counts = train_val_data[all_labels].sum()
+    valid_labels = label_counts[label_counts >= 1000].index.tolist()
+
+    # Debug: Check which labels are being removed
+    # print("Removed labels (less than 1000 samples):", set(all_labels) - set(valid_labels))
+
+    # Filter the datasets to include only valid labels
+    train_val_data = train_val_data.loc[:, [
+        'path', 'image_file'] + valid_labels]
+    test_data = test_data.loc[:, ['path', 'image_file'] + valid_labels]
+
+    return train_val_data, test_data, valid_labels
 
 
 def get_transforms():
     return transforms.Compose([
         transforms.Resize((224, 224)),
-        # transforms.Grayscale(),  # Remove this line to keep images in RGB
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(5),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                             0.229, 0.224, 0.225])  # Adjusted for three channels
+                             0.229, 0.224, 0.225])
     ])
 
 
@@ -84,11 +94,41 @@ class ChestXrayDataset(Dataset):
 
 
 def prepare_data_loaders(data, all_labels, batch_size=config.BATCH_SIZE, val_batch_size=config.VAL_BATCH_SIZE):
-    dataset = ChestXrayDataset(data, all_labels, transform=get_transforms())
-    train_size = int(0.75 * len(dataset))
-    valid_size = len(dataset) - train_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(
-        dataset, [train_size, valid_size])
+    # print("Data shape before splitting:", data.shape)
+    label_sums = data[all_labels].sum()
+    # print("Label sums:\n", label_sums)
+
+    # Identify labels with at least 2 samples to allow stratification
+    stratifiable_labels = label_sums[label_sums >= 2].index.tolist()
+    # print("Stratifiable labels:", stratifiable_labels)
+
+    if not stratifiable_labels:
+        print("Warning: No labels have at least 2 samples; stratification will not be performed.")
+        train_data, valid_data = train_test_split(
+            data, test_size=0.25, random_state=42)
+    else:
+        # Choose the label with the maximum samples as the primary stratification key
+        primary_label = label_sums.idxmax()
+        # print("Primary label for stratification:", primary_label)
+
+        # Ensure that primary label has at least two different classes
+        if data[primary_label].nunique() >= 2:
+            train_data, valid_data = train_test_split(
+                data, test_size=0.25, stratify=data[primary_label], random_state=42)
+        else:
+            print(
+                "Insufficient classes for stratification on primary label. Performing a simple split.")
+            train_data, valid_data = train_test_split(
+                data, test_size=0.25, random_state=42)
+
+    # print("Train data shape:", train_data.shape)
+    # print("Validation data shape:", valid_data.shape)
+
+    train_dataset = ChestXrayDataset(
+        train_data, all_labels, transform=get_transforms())
+    valid_dataset = ChestXrayDataset(
+        valid_data, all_labels, transform=get_transforms())
+
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(
