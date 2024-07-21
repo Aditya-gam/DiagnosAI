@@ -8,23 +8,18 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from itertools import chain
-
-# Constants
-FINDING_LABELS_COLUMN = 'Finding Labels'
-BASE_PATH = './data/NIH_Dataset'
-CSV_FILE = os.path.join(BASE_PATH, 'Data_Entry_2017.csv')
-IMAGE_PATH_PATTERN = os.path.join(BASE_PATH, 'images_*', 'images', '*.png')
+import config
 
 def load_data():
-    data = pd.read_csv(CSV_FILE)
+    data = pd.read_csv(config.CSV_FILE)
     data = data[data['Patient Age'] < 100]
-    image_paths = glob(IMAGE_PATH_PATTERN)
+    image_paths = glob(config.IMAGE_PATH_PATTERN)
     image_path_dict = {os.path.basename(path): path for path in image_paths}
     data['path'] = data['Image Index'].map(image_path_dict.get)
-    data[FINDING_LABELS_COLUMN] = data[FINDING_LABELS_COLUMN].apply(lambda x: x.replace('No Finding', ''))
-    all_labels = sorted(np.unique(list(chain(*data[FINDING_LABELS_COLUMN].map(lambda x: x.split('|')).tolist()))))
+    data[config.FINDING_LABELS_COLUMN] = data[config.FINDING_LABELS_COLUMN].apply(lambda x: x.replace('No Finding', ''))
+    all_labels = sorted(np.unique(list(chain(*data[config.FINDING_LABELS_COLUMN].map(lambda x: x.split('|')).tolist()))))
     for label in all_labels:
-        data[label] = data[FINDING_LABELS_COLUMN].apply(lambda x, lbl=label: 1.0 if lbl in x else 0)
+        data[label] = data[config.FINDING_LABELS_COLUMN].apply(lambda x, lbl=label: 1.0 if lbl in x else 0)
     return data, all_labels
 
 def get_transforms():
@@ -54,12 +49,12 @@ class ChestXrayDataset(Dataset):
             image = self.transform(image)
         return image, label
 
-def prepare_data_loaders(data, all_labels, batch_size=32, val_batch_size=256):
+def prepare_data_loaders(data, all_labels, batch_size=config.BATCH_SIZE, val_batch_size=config.VAL_BATCH_SIZE):
     dataset = ChestXrayDataset(data, all_labels, transform=get_transforms())
     train_size = int(0.75 * len(dataset))
     valid_size = len(dataset) - train_size
     train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=val_batch_size, shuffle=False)
-    
+
     return train_loader, valid_loader

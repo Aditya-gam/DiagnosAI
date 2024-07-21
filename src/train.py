@@ -56,7 +56,7 @@ def validate_model(model, valid_loader, criterion, device):
 
     return epoch_loss, epoch_acc, f1, precision, recall, auc
 
-def train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=25, model_save=False, save_path='model.pth'):
+def train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=10, model_save=False, save_path='model.pth'):
     best_val_acc = 0.0
     best_model = None
     metrics_history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [], 'f1': [], 'precision': [], 'recall': [], 'auc': []}
@@ -73,7 +73,8 @@ def train_model(model, criterion, optimizer, scheduler, train_loader, valid_load
         if model_save and val_acc > best_val_acc:
             best_val_acc = val_acc
             best_model = model.state_dict()
-            save_model(model, save_path, best_val_acc)
+            save_model(model, save_path)
+            print(f"Model saved with accuracy: {best_val_acc:.4f}")
 
         scheduler.step()
     
