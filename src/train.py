@@ -65,6 +65,7 @@ def train_model(model, criterion, optimizer, scheduler, train_loader, valid_load
     best_model = None
     metrics_history = {'train_loss': [], 'train_acc': [], 'val_loss': [
     ], 'val_acc': [], 'f1': [], 'precision': [], 'recall': [], 'auc': []}
+    print(f"In training loop with {num_epochs} epochs")
 
     for epoch in range(num_epochs):
         train_loss, train_acc = train_one_epoch(
