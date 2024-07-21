@@ -10,9 +10,11 @@ def main():
     train_loader, valid_loader = prepare_data_loaders(data, all_labels)
     
     model, criterion, optimizer, scheduler = initialize_model(device, num_classes=len(all_labels))
-    
-    trained_model = train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=25)
-    # Additional evaluation can be performed here
+
+    # Set save_model to True if you want to save the model after training
+    trained_model, metrics_history = train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=25, save_model=True, save_path='best_model.pth')
+
+    # Now you can use metrics_history for graphing or further analysis
 
 if __name__ == '__main__':
     main()
