@@ -5,7 +5,7 @@ from model import ResNet50Model
 
 
 def initialize_model(device, num_classes, feature_extract=True, optimizer_name='SGD', lr=0.001, momentum=0.9, weight_decay=0.0, step_size=7, gamma=0.1):
-    model = ResNet50Model(num_classes, feature_extract)
+    model = ResNet50Model(num_classes, feature_extract, use_attention=True)
     model = model.to(device)
 
     # Suitable for multi-label classification tasks
@@ -49,9 +49,11 @@ def create_metrics_list(metrics_history, train_loss, train_acc, val_loss, val_ac
 
     return metrics_history
 
+
 def count_parameters(model):
     total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    trainable_params = sum(p.numel()
+                           for p in model.parameters() if p.requires_grad)
     non_trainable_params = total_params - trainable_params
-    
+
     return total_params, trainable_params, non_trainable_params
