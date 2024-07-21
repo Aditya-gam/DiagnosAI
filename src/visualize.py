@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+
 def plot_loss(metrics_history, save_path=None):
     plt.figure(figsize=(6, 4))
     plt.plot(metrics_history['train_loss'], label='Train Loss')
@@ -11,6 +12,7 @@ def plot_loss(metrics_history, save_path=None):
     if save_path:
         plt.savefig(f"{save_path}_loss.png")
     plt.close()
+
 
 def plot_accuracy(metrics_history, save_path=None):
     plt.figure(figsize=(6, 4))
@@ -24,6 +26,7 @@ def plot_accuracy(metrics_history, save_path=None):
         plt.savefig(f"{save_path}_accuracy.png")
     plt.close()
 
+
 def plot_f1_precision_recall(metrics_history, save_path=None):
     plt.figure(figsize=(6, 4))
     plt.plot(metrics_history['f1'], label='F1 Score')
@@ -36,6 +39,7 @@ def plot_f1_precision_recall(metrics_history, save_path=None):
     if save_path:
         plt.savefig(f"{save_path}_f1_precision_recall.png")
     plt.close()
+
 
 def plot_auc(metrics_history, save_path=None):
     plt.figure(figsize=(6, 4))

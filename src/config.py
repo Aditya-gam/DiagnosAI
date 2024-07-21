@@ -7,7 +7,8 @@ GRAPHS_SAVE_PATH = 'performance_graphs/plot'
 
 FINDING_LABELS_COLUMN = 'Finding Labels'
 CSV_FILE = os.path.join(BASE_DATA_PATH, 'Data_Entry_2017.csv')
-IMAGE_PATH_PATTERN = os.path.join(BASE_DATA_PATH, 'images_*', 'images', '*.png')
+IMAGE_PATH_PATTERN = os.path.join(
+    BASE_DATA_PATH, 'images_*', 'images', '*.png')
 
 BATCH_SIZE = 32
 VAL_BATCH_SIZE = 256

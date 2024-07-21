@@ -1,5 +1,6 @@
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
+
 def calculate_metrics(labels, predictions):
     """ Calculate and return the F1 score, precision, recall, and AUC-ROC for the given labels and predictions """
     f1 = f1_score(labels, predictions, average='macro')

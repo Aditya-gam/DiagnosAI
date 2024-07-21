@@ -5,6 +5,7 @@ from src.dataset import prepare_test_loader, load_data
 from src.utils import initialize_model
 import src.config as config
 
+
 class TestModelPerformance(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -14,7 +15,8 @@ class TestModelPerformance(unittest.TestCase):
 
         # Initialize the model
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        cls.model, _, _, _ = initialize_model(device, num_classes=len(all_labels))
+        cls.model, _, _, _ = initialize_model(
+            device, num_classes=len(all_labels))
 
         # Load trained model weights
         cls.model.load_state_dict(torch.load(config.MODEL_SAVE_PATH))
@@ -43,10 +45,12 @@ class TestModelPerformance(unittest.TestCase):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-        
+
         accuracy = correct / total
         print(f"Accuracy: {accuracy}")
-        self.assertGreater(accuracy > 0.7)  # Assume expected accuracy is at least 70%
+        # Assume expected accuracy is at least 70%
+        self.assertGreater(accuracy > 0.7)
+
 
 if __name__ == '__main__':
     unittest.main()
