@@ -21,7 +21,7 @@ def main():
     print(f"Number of test samples: {len(test_loader.dataset)}")
 
     model, criterion, optimizer, scheduler = initialize_model(
-        device, num_classes=len(all_labels))
+        device, optimizer_name='Adam', num_classes=len(all_labels))
     total_params, trainable_params, non_trainable_params = count_parameters(model)
     print(f"Total parameters: {total_params}")
     print(f"Trainable parameters: {trainable_params}")
