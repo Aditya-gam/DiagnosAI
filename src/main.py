@@ -12,7 +12,7 @@ def main():
     model, criterion, optimizer, scheduler = initialize_model(device, num_classes=len(all_labels))
 
     # Set save_model to True if you want to save the model after training
-    trained_model, metrics_history = train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=25, save_model=True, save_path='best_model.pth')
+    trained_model, best_trained_model, metrics_history = train_model(model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=25, save_model=True, save_path='best_model.pth')
 
     # Now you can use metrics_history for graphing or further analysis
 
