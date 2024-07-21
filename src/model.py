@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
-
+from torchvision.models import ResNet50_Weights
 
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
@@ -12,7 +12,7 @@ def set_parameter_requires_grad(model, feature_extracting):
 class ResNet50Model(nn.Module):
     def __init__(self, num_classes, feature_extract=True, use_attention=False):
         super(ResNet50Model, self).__init__()
-        self.resnet50 = models.resnet50(pretrained=True)
+        self.resnet50 = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1 if feature_extract else None)
         set_parameter_requires_grad(self.resnet50, feature_extract)
 
         # Modify the fully connected layer

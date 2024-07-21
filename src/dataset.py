@@ -31,20 +31,22 @@ def load_data():
     data['path'] = data['image_file'].map(image_path_dict.get)
 
     # Apply filters based on the lists
-    train_val_data = data[data['image_file'].isin(train_val_images)]
-    test_data = data[data['image_file'].isin(test_images)]
+    train_val_data = data[data['image_file'].isin(train_val_images)].copy()
+    test_data = data[data['image_file'].isin(test_images)].copy()
 
-    train_val_data[config.FINDING_LABELS_COLUMN] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
+    # Use .loc to avoid SettingWithCopyWarning
+    train_val_data.loc[:, config.FINDING_LABELS_COLUMN] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
         lambda x: x.replace('No Finding', ''))
-    test_data[config.FINDING_LABELS_COLUMN] = test_data[config.FINDING_LABELS_COLUMN].apply(
+    test_data.loc[:, config.FINDING_LABELS_COLUMN] = test_data[config.FINDING_LABELS_COLUMN].apply(
         lambda x: x.replace('No Finding', ''))
 
     all_labels = sorted(np.unique(list(chain(
         *train_val_data[config.FINDING_LABELS_COLUMN].map(lambda x: x.split('|')).tolist()))))
+
     for label in all_labels:
-        train_val_data[label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
+        train_val_data.loc[:, label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
             lambda x, lbl=label: 1.0 if lbl in x else 0)
-        test_data[label] = test_data[config.FINDING_LABELS_COLUMN].apply(
+        test_data.loc[:, label] = test_data[config.FINDING_LABELS_COLUMN].apply(
             lambda x, lbl=label: 1.0 if lbl in x else 0)
 
     return train_val_data, test_data, all_labels

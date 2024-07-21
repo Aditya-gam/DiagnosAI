@@ -9,20 +9,29 @@ import config
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    train_val_data, test_data, all_labels = load_data()
+    print(f"Using device: {device}")
 
+    train_val_data, test_data, all_labels = load_data()
     train_loader, valid_loader = prepare_data_loaders(
         train_val_data, all_labels)
+    print(f"Number of training samples: {len(train_loader.dataset)}")
+    print(f"Number of validation samples: {len(valid_loader.dataset)}")
+
     test_loader = prepare_test_loader(test_data, all_labels)
+    print(f"Number of test samples: {len(test_loader.dataset)}")
 
     model, criterion, optimizer, scheduler = initialize_model(
         device, num_classes=len(all_labels))
+    print(f"Model: {model}")
+
     trained_model, best_trained_model, metrics_history = train_model(
         model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=config.NUM_EPOCHS, model_save=True, save_path=config.MODEL_SAVE_PATH)
 
     # Save the model with the best validation accuracy
     save_model(best_trained_model, 'model_weights/final_best_model.pth')
+    print("best_trained_model saved at: model_weights/final_best_model.pth")
     save_model(trained_model, 'model_weights/complete_trained_model.pth')
+    print("trained_model saved at: model_weights/complete_trained_model.pth")
 
     # Plot the metrics
     save_path = config.GRAPHS_SAVE_PATH
