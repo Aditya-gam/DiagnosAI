@@ -1,6 +1,6 @@
 import torch
 
-from utils import initialize_model, save_model
+from utils import initialize_model, save_model, count_parameters
 from train import train_model
 from dataset import load_data, prepare_data_loaders, prepare_test_loader
 from visualize import plot_loss, plot_accuracy, plot_f1_precision_recall, plot_auc
@@ -22,7 +22,10 @@ def main():
 
     model, criterion, optimizer, scheduler = initialize_model(
         device, num_classes=len(all_labels))
-    print(f"Model: {model}")
+    total_params, trainable_params, non_trainable_params = count_parameters(model)
+    print(f"Total parameters: {total_params}")
+    print(f"Trainable parameters: {trainable_params}")
+    print(f"Non-trainable parameters: {non_trainable_params}")
 
     trained_model, best_trained_model, metrics_history = train_model(
         model, criterion, optimizer, scheduler, train_loader, valid_loader, device, num_epochs=config.NUM_EPOCHS, model_save=True, save_path=config.MODEL_SAVE_PATH)

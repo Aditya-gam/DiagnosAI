@@ -48,3 +48,10 @@ def create_metrics_list(metrics_history, train_loss, train_acc, val_loss, val_ac
     metrics_history['auc'].append(auc)
 
     return metrics_history
+
+def count_parameters(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    non_trainable_params = total_params - trainable_params
+    
+    return total_params, trainable_params, non_trainable_params
