@@ -31,10 +31,9 @@ def initialize_model(device, num_classes, feature_extract=True, optimizer_name='
     return model, criterion, optimizer, scheduler
 
 
-def save_model(model, path, accuracy):
+def save_model(model, path):
     """ Saves the model's state_dict to the specified path if the model has improved based on accuracy """
     torch.save(model.state_dict(), path)
-    print(f"Model saved with accuracy: {accuracy:.4f}")
 
 
 def create_metrics_list(metrics_history, train_loss, train_acc, val_loss, val_acc, f1, precision, recall, auc):
