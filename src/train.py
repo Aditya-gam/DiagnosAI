@@ -81,7 +81,7 @@ def train_model(model, criterion, optimizer, scheduler, train_loader, valid_load
 
         if model_save and val_acc > best_val_acc:
             best_val_acc = val_acc
-            best_model = model.state_dict()
+            best_model = model
             save_model(model, save_path)
             print(f"Model saved with accuracy: {best_val_acc:.4f}")
 

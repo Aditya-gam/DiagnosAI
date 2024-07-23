@@ -20,8 +20,7 @@ def main():
     test_loader = prepare_test_loader(test_data, all_labels)
     print(f"Number of test samples: {len(test_loader.dataset)}")
 
-    model, criterion, optimizer, scheduler = initialize_model(
-        device, optimizer_name='Adam', num_classes=len(all_labels))
+    model, criterion, optimizer, scheduler = initialize_model(device, num_classes=len(all_labels), optimizer_name='AdamW', lr=0.001, weight_decay=0.01, step_size=7, gamma=0.1)
     total_params, trainable_params, non_trainable_params = count_parameters(model)
     print(f"Total parameters: {total_params}")
     print(f"Trainable parameters: {trainable_params}")

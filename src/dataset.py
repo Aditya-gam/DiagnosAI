@@ -10,7 +10,6 @@ from torchvision import transforms
 from itertools import chain
 import config
 
-
 def load_image_lists():
     with open(os.path.join(config.BASE_DATA_PATH, 'train_val_list.txt'), 'r') as file:
         train_val_images = file.read().splitlines()
@@ -18,46 +17,37 @@ def load_image_lists():
         test_images = file.read().splitlines()
     return train_val_images, test_images
 
-
 def load_data():
     train_val_images, test_images = load_image_lists()
     data = pd.read_csv(config.CSV_FILE)
     data = data[data['Patient Age'] < 100]
-    data['image_file'] = data['Image Index'].apply(
-        lambda x: x.split('.')[0] + '.png')
+    data['image_file'] = data['Image Index'].apply(lambda x: x.split('.')[0] + '.png')
     image_paths = glob(config.IMAGE_PATH_PATTERN)
     image_path_dict = {os.path.basename(path): path for path in image_paths}
     data['path'] = data['image_file'].map(image_path_dict.get)
 
+    # Resample the data to address class imbalance
+    sample_weights = data[config.FINDING_LABELS_COLUMN].map(lambda x: len(x.split('|')) if x else 0).values + 0.04
+    sample_weights /= sample_weights.sum()
+    data = data.sample(40000, weights=sample_weights, random_state=42)  # Add random_state for reproducibility
+
     train_val_data = data[data['image_file'].isin(train_val_images)].copy()
     test_data = data[data['image_file'].isin(test_images)].copy()
 
-    train_val_data.loc[:, config.FINDING_LABELS_COLUMN] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
-        lambda x: x.replace('No Finding', ''))
-    test_data.loc[:, config.FINDING_LABELS_COLUMN] = test_data[config.FINDING_LABELS_COLUMN].apply(
-        lambda x: x.replace('No Finding', ''))
+    train_val_data.loc[:, config.FINDING_LABELS_COLUMN] = train_val_data[config.FINDING_LABELS_COLUMN].apply(lambda x: x.replace('No Finding', ''))
+    test_data.loc[:, config.FINDING_LABELS_COLUMN] = test_data[config.FINDING_LABELS_COLUMN].apply(lambda x: x.replace('No Finding', ''))
 
     # Split labels and remove empty entries
-    all_labels = sorted(set(chain(
-        *train_val_data[config.FINDING_LABELS_COLUMN].map(lambda x: filter(None, x.split('|'))))))
+    all_labels = sorted(set(chain(*train_val_data[config.FINDING_LABELS_COLUMN].map(lambda x: filter(None, x.split('|'))))))
 
-    # Create binary columns for each label
     for label in all_labels:
-        train_val_data[label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(
-            lambda x: 1 if label in x else 0)
-        test_data[label] = test_data[config.FINDING_LABELS_COLUMN].apply(
-            lambda x: 1 if label in x else 0)
+        train_val_data[label] = train_val_data[config.FINDING_LABELS_COLUMN].apply(lambda x: 1 if label in x else 0)
+        test_data[label] = test_data[config.FINDING_LABELS_COLUMN].apply(lambda x: 1 if label in x else 0)
 
-    # Filter labels based on occurrence threshold
     label_counts = train_val_data[all_labels].sum()
     valid_labels = label_counts[label_counts >= 1000].index.tolist()
 
-    # Debug: Check which labels are being removed
-    # print("Removed labels (less than 1000 samples):", set(all_labels) - set(valid_labels))
-
-    # Filter the datasets to include only valid labels
-    train_val_data = train_val_data.loc[:, [
-        'path', 'image_file'] + valid_labels]
+    train_val_data = train_val_data.loc[:, ['path', 'image_file'] + valid_labels]
     test_data = test_data.loc[:, ['path', 'image_file'] + valid_labels]
 
     return train_val_data, test_data, valid_labels

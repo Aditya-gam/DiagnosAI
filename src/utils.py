@@ -1,11 +1,12 @@
+import os
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from model import ResNet50Model
 
 
-def initialize_model(device, num_classes, feature_extract=True, optimizer_name='SGD', lr=0.001, momentum=0.9, weight_decay=0.0, step_size=7, gamma=0.1):
-    model = ResNet50Model(num_classes, feature_extract, use_attention=True)
+def initialize_model(device, num_classes, feature_extract=True, optimizer_name='SGD', lr=0.0001, momentum=0.9, weight_decay=0.0, step_size=7, gamma=0.1):
+    model = ResNet50Model(num_classes, feature_extract, use_attention=False)
     model = model.to(device)
 
     # Suitable for multi-label classification tasks
@@ -32,7 +33,12 @@ def initialize_model(device, num_classes, feature_extract=True, optimizer_name='
 
 
 def save_model(model, path):
-    """ Saves the model's state_dict to the specified path if the model has improved based on accuracy """
+    """ Saves the model's state_dict to the specified path, creating the directory if necessary """
+    # Ensure the directory exists
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    # Save the model
     torch.save(model.state_dict(), path)
 
 

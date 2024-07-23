@@ -11,5 +11,5 @@ IMAGE_PATH_PATTERN = os.path.join(
     BASE_DATA_PATH, 'images_*', 'images', '*.png')
 
 BATCH_SIZE = 32
-VAL_BATCH_SIZE = 256
-NUM_EPOCHS = 25
+VAL_BATCH_SIZE = 32
+NUM_EPOCHS = 50
