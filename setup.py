@@ -34,7 +34,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10'
     ],
-    keywords='machine learning, image processing, chest x-rays, disease diagnosis',
+    keywords='deep learning, computer vision, resnet50, chest x-rays, disease diagnosis',
     entry_points={
         'console_scripts': [
             'diagnosai=src.main:main',
