@@ -28,4 +28,4 @@ BATCH_SIZE = 32
 VAL_BATCH_SIZE = 32
 
 # NUM_EPOCHS defines the total number of complete passes through the training dataset.
-NUM_EPOCHS = 1
+NUM_EPOCHS = 10
